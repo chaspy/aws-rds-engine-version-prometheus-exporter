@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/prometheus/client_golang/prometheus"
@@ -102,16 +101,7 @@ func getRDSClusters() ([]RDSInfo, error) {
 
 	RDSClusters, err := svc.DescribeDBClusters(input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case rds.ErrCodeDBClusterNotFoundFault:
-				return nil, fmt.Errorf("RDS Cluster is not found: %w", aerr.Error())
-			default:
-				return nil, fmt.Errorf("failed to describe DB clusters: %w", aerr.Error())
-			}
-		} else {
-			return nil, fmt.Errorf("failed to describe DB clusters: %w", err)
-		}
+		return nil, fmt.Errorf("failed to describe DB clusters: %w", err)
 	}
 
 	RDSInfos := make([]RDSInfo, len(RDSClusters.DBClusters))
