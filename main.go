@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/prometheus/client_golang/prometheus"
@@ -66,7 +66,6 @@ func snapshot() error {
 	}
 
 	for _, RDSInfo := range RDSInfos {
-
 		labels := prometheus.Labels{
 			"cluster_identifier": RDSInfo.ClusterIdentifier,
 			"engine":             RDSInfo.Engine,
@@ -93,7 +92,7 @@ func getInterval() (int, error) {
 	return integerGithubAPIInterval, nil
 }
 
-func getRDSClusters() ([]RDSInfo, error){
+func getRDSClusters() ([]RDSInfo, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -117,7 +116,6 @@ func getRDSClusters() ([]RDSInfo, error){
 
 	RDSInfos := make([]RDSInfo, len(RDSClusters.DBClusters))
 	for i, RDSCluster := range RDSClusters.DBClusters {
-
 		RDSInfos[i] = RDSInfo{
 			ClusterIdentifier: *RDSCluster.DBClusterIdentifier,
 			Engine:            *RDSCluster.Engine,
