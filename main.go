@@ -60,26 +60,17 @@ func main() {
 func snapshot() error {
 	rdsCount.Reset()
 
-	RDSClusters, err := getRDSClusters()
+	RDSInfos, err := getRDSClusters()
 	if err != nil {
 		return fmt.Errorf("failed to read RDS infos: %w", err)
 	}
 
-	fmt.Printf("%#v\n",RDSClusters)
-
-	RDSInfos := make([]RDSInfo, len(RDSClusters.DBClusters))
-	for i, RDSCluster := range RDSClusters.DBClusters {
-
-		RDSInfos[i] = RDSInfo{
-			ClusterIdentifier: *RDSCluster.DBClusterIdentifier,
-			Engine:            *RDSCluster.Engine,
-			EngineVersion:     *RDSCluster.EngineVersion,
-		}
+	for _, RDSInfo := range RDSInfos {
 
 		labels := prometheus.Labels{
-			"cluster_identifier": *RDSCluster.DBClusterIdentifier,
-			"engine": *RDSCluster.Engine,
-			"engine_version": *RDSCluster.EngineVersion,
+			"cluster_identifier": RDSInfo.ClusterIdentifier,
+			"engine":             RDSInfo.Engine,
+			"engine_version":     RDSInfo.EngineVersion,
 		}
 		rdsCount.With(labels).Set(1)
 	}
@@ -102,7 +93,7 @@ func getInterval() (int, error) {
 	return integerGithubAPIInterval, nil
 }
 
-func getRDSClusters() (*rds.DescribeDBClustersOutput, error){
+func getRDSClusters() ([]RDSInfo, error){
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -124,5 +115,15 @@ func getRDSClusters() (*rds.DescribeDBClustersOutput, error){
 		}
 	}
 
-	return RDSClusters, nil
+	RDSInfos := make([]RDSInfo, len(RDSClusters.DBClusters))
+	for i, RDSCluster := range RDSClusters.DBClusters {
+
+		RDSInfos[i] = RDSInfo{
+			ClusterIdentifier: *RDSCluster.DBClusterIdentifier,
+			Engine:            *RDSCluster.Engine,
+			EngineVersion:     *RDSCluster.EngineVersion,
+		}
+	}
+
+	return RDSInfos, nil
 }
