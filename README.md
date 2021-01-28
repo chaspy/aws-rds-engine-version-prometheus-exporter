@@ -1,6 +1,8 @@
 # aws-rds-engine-version-prometheus-exporter
 Prometheus Exporter for AWS RDS Engine Version
 
+![image.png](image.png)
+
 ## How to run
 
 ### Local
