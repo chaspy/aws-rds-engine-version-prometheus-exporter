@@ -125,6 +125,7 @@ func getRDSClusters() ([]RDSInfo, error) {
 }
 
 // Get information about RDS Instances that are not Aurora
+// nolint:funlen
 func getRDSInstances() ([]RDSInfo, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
