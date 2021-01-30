@@ -33,6 +33,27 @@ aws_custom_rds_cluster_count{cluster_identifier="video-production-a",engine="aur
 aws_custom_rds_cluster_count{cluster_identifier="video-staging-a",engine="aurora-postgresql",engine_version="9.6.17"} 1
 ```
 
+## IAM Role
+
+The following policy must be attached to the AWS role to be executed.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "rds:DescribeDBInstances",
+                "rds:DescribeDBClusters"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 ## Datadog Autodiscovery
 
 If you use Datadog, you can use [Kubernetes Integration Autodiscovery](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes) feature.
