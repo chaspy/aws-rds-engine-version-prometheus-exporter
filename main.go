@@ -179,7 +179,7 @@ func getRDSInstances() ([]RDSInfo, error) {
 				Name:   aws.String("engine"),
 				Values: []*string{aws.String("sqlserver-web")},
 			},
-	},
+		},
 	}
 
 	RDSInstances, err := svc.DescribeDBInstances(input)
