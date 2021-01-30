@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/prometheus/client_golang/prometheus"
@@ -59,10 +60,17 @@ func main() {
 func snapshot() error {
 	rdsCount.Reset()
 
-	RDSInfos, err := getRDSClusters()
+	ClusterInfos, err := getRDSClusters()
 	if err != nil {
-		return fmt.Errorf("failed to read RDS infos: %w", err)
+		return fmt.Errorf("failed to read RDS Cluster infos: %w", err)
 	}
+
+	InstanceInfos, err := getRDSInstances()
+	if err != nil {
+		return fmt.Errorf("failed to read RDS Instance infos: %w", err)
+	}
+
+	RDSInfos := append(ClusterInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
 		labels := prometheus.Labels{
@@ -110,6 +118,81 @@ func getRDSClusters() ([]RDSInfo, error) {
 			ClusterIdentifier: *RDSCluster.DBClusterIdentifier,
 			Engine:            *RDSCluster.Engine,
 			EngineVersion:     *RDSCluster.EngineVersion,
+		}
+	}
+
+	return RDSInfos, nil
+}
+
+// Get information about RDS Instances that are not Aurora
+func getRDSInstances() ([]RDSInfo, error) {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	svc := rds.New(sess)
+	input := &rds.DescribeDBInstancesInput{
+		// Supported engine versions are referenced here
+		// https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-engine-versions.html#options
+		Filters: []*rds.Filter{
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("mariadb")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("mysql")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("oracle-ee")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("oracle-se2")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("oracle-se1")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("oracle-se")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("postgres")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("sqlserver-ee")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("sqlserver-se")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("sqlserver-ex")},
+			},
+			{
+				Name:   aws.String("engine"),
+				Values: []*string{aws.String("sqlserver-web")},
+			},
+	},
+	}
+
+	RDSInstances, err := svc.DescribeDBInstances(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe DB instances: %w", err)
+	}
+
+	RDSInfos := make([]RDSInfo, len(RDSInstances.DBInstances))
+	for i, RDSInstance := range RDSInstances.DBInstances {
+		RDSInfos[i] = RDSInfo{
+			ClusterIdentifier: *RDSInstance.DBInstanceIdentifier,
+			Engine:            *RDSInstance.Engine,
+			EngineVersion:     *RDSInstance.EngineVersion,
 		}
 	}
 
