@@ -1,0 +1,4 @@
+Engine,MinimumSupportedVersion,ValidDate
+mysql,5.7.0,2021-02-05
+postgres,9.6.0,2021-02-16
+postgres,9.7.0,2022-01-18

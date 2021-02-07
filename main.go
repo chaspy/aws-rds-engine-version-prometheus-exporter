@@ -23,10 +23,10 @@ type RDSInfo struct {
 	Engine            string
 	EngineVersion     string
 }
-type EOLInfo struct {
-	Engine           string
-	EOLEngineVersion string
-	EOLDate          string
+type MinimumSupportedInfo struct {
+	Engine                  string
+	MinimumSupportedVersion string
+	ValidDate               string
 }
 
 var (
@@ -47,7 +47,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	eolInfo, err := readEOLInfoCSV()
+	minimumSupportedInfo, err := readEOLInfoCSV()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 
 		// register metrics as background
 		for range ticker.C {
-			err := snapshot(eolInfo)
+			err := snapshot(minimumSupportedInfo)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -70,7 +70,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func snapshot(eolInfo []EOLInfo) error {
+func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 	rdsCount.Reset()
 
 	ClusterInfos, err := getRDSClusters()
@@ -86,7 +86,7 @@ func snapshot(eolInfo []EOLInfo) error {
 	RDSInfos := append(ClusterInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
-		eolStatus, err := validateEOLStatus(RDSInfo, eolInfo)
+		eolStatus, err := validateEOLStatus(RDSInfo, minimumSupportedInfo)
 		if err != nil {
 			return fmt.Errorf("failed to validate EOL Status: %w", err)
 		}
@@ -219,27 +219,27 @@ func getRDSInstances() ([]RDSInfo, error) {
 	return RDSInfos, nil
 }
 
-func readEOLInfoCSV() ([]EOLInfo, error) {
-	var eolInfos []EOLInfo
+func readEOLInfoCSV() ([]MinimumSupportedInfo, error) {
+	var eolInfos []MinimumSupportedInfo
 
-	csv, err := ioutil.ReadFile("eolinfo.csv")
+	csv, err := ioutil.ReadFile("minimum_supported_version.csv")
 	if err != nil {
-		return []EOLInfo{}, fmt.Errorf("failed to read CSV file: %w", err)
+		return []MinimumSupportedInfo{}, fmt.Errorf("failed to read CSV file: %w", err)
 	}
 
 	if err := csvutil.Unmarshal(csv, &eolInfos); err != nil {
-		return []EOLInfo{}, fmt.Errorf("failed to unmarshal: %w", err)
+		return []MinimumSupportedInfo{}, fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
 	return eolInfos, nil
 }
 
-func validateEOLStatus(rdsInfo RDSInfo, eolInfos []EOLInfo) (string, error) {
-	for _, eolInfo := range eolInfos {
-		if eolInfo.Engine == rdsInfo.Engine {
-			fmt.Printf("match engine %v\n", eolInfo.Engine)
+func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupportedInfo) (string, error) {
+	for _, minimumSupportedInfo := range minimumSupportedInfos {
+		if minimumSupportedInfo.Engine == rdsInfo.Engine {
+			fmt.Printf("match engine %v\n", minimumSupportedInfo.Engine)
 
-			result, err := compareEngineVersion(rdsInfo, eolInfo)
+			result, err := compareEngineVersion(rdsInfo, minimumSupportedInfo)
 			if err != nil {
 				return "", fmt.Errorf("failed to compare Engine Version:: %w", err)
 			}
@@ -253,18 +253,18 @@ func validateEOLStatus(rdsInfo RDSInfo, eolInfos []EOLInfo) (string, error) {
 	return "hoge", nil
 }
 
-func compareEngineVersion(rdsInfo RDSInfo, eolInfo EOLInfo) (bool, error) {
+func compareEngineVersion(rdsInfo RDSInfo, minimumSupportedInfo MinimumSupportedInfo) (bool, error) {
 	engineVersion, err := version.NewVersion(rdsInfo.EngineVersion)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return false, nil
 	}
 
-	eolEngineVersion, err := version.NewVersion(eolInfo.EOLEngineVersion)
+	minimumSupportedVersion, err := version.NewVersion(minimumSupportedInfo.MinimumSupportedVersion)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return false, nil
 	}
 
-	return engineVersion.LessThan(eolEngineVersion), nil
+	return engineVersion.LessThan(minimumSupportedVersion), nil
 }
