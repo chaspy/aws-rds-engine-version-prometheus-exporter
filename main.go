@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/jszwec/csvutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -19,6 +21,11 @@ type RDSInfo struct {
 	ClusterIdentifier string
 	Engine            string
 	EngineVersion     string
+}
+type EOLInfo struct {
+	Engine           string
+	EOLEngineVersion string
+	EOLDate          string
 }
 
 var (
@@ -34,6 +41,13 @@ var (
 )
 
 func main() {
+	eolinfo, err := readEOLInfoCSV()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(eolinfo)
+
 	interval, err := getInterval()
 	if err != nil {
 		log.Fatal(err)
@@ -198,4 +212,19 @@ func getRDSInstances() ([]RDSInfo, error) {
 	}
 
 	return RDSInfos, nil
+}
+
+func readEOLInfoCSV() ([]EOLInfo, error) {
+	var eolInfos []EOLInfo
+
+	csv, err := ioutil.ReadFile("eolinfo.csv")
+	if err != nil {
+		return []EOLInfo{}, fmt.Errorf("failed to read CSV file: %w", err)
+	}
+
+	if err := csvutil.Unmarshal(csv, &eolInfos); err != nil {
+		return []EOLInfo{}, fmt.Errorf("failed to unmarshal: %w", err)
+	}
+
+	return eolInfos, nil
 }
