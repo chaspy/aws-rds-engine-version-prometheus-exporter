@@ -285,14 +285,12 @@ func validateEOLDate(validDate string, now time.Time) (string, error) {
 func compareEngineVersion(rdsInfo RDSInfo, minimumSupportedInfo MinimumSupportedInfo) (bool, error) {
 	engineVersion, err := version.NewVersion(rdsInfo.EngineVersion)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return false, nil
+		return false, fmt.Errorf("failed to declare engine version: %w", err)
 	}
 
 	minimumSupportedVersion, err := version.NewVersion(minimumSupportedInfo.MinimumSupportedVersion)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return false, nil
+		return false, fmt.Errorf("failed to declare minimum supported version: %w", err)
 	}
 
 	return engineVersion.LessThan(minimumSupportedVersion), nil
