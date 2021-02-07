@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/hashicorp/go-version"
 	"github.com/jszwec/csvutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -36,19 +37,17 @@ var (
 		Name:      "cluster_count",
 		Help:      "Number of RDS",
 	},
-		[]string{"cluster_identifier", "engine", "engine_version"},
+		[]string{"cluster_identifier", "engine", "engine_version", "eol_status"},
 	)
 )
 
 func main() {
-	eolinfo, err := readEOLInfoCSV()
+	interval, err := getInterval()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(eolinfo)
-
-	interval, err := getInterval()
+	eolInfo, err := readEOLInfoCSV()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +61,7 @@ func main() {
 
 		// register metrics as background
 		for range ticker.C {
-			err := snapshot()
+			err := snapshot(eolInfo)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -71,7 +70,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func snapshot() error {
+func snapshot(eolInfo []EOLInfo) error {
 	rdsCount.Reset()
 
 	ClusterInfos, err := getRDSClusters()
@@ -87,10 +86,16 @@ func snapshot() error {
 	RDSInfos := append(ClusterInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
+		eolStatus, err := validateEOLStatus(RDSInfo, eolInfo)
+		if err != nil {
+			return fmt.Errorf("failed to validate EOL Status: %w", err)
+		}
+
 		labels := prometheus.Labels{
 			"cluster_identifier": RDSInfo.ClusterIdentifier,
 			"engine":             RDSInfo.Engine,
 			"engine_version":     RDSInfo.EngineVersion,
+			"eol_status":         eolStatus,
 		}
 		rdsCount.With(labels).Set(1)
 	}
@@ -227,4 +232,39 @@ func readEOLInfoCSV() ([]EOLInfo, error) {
 	}
 
 	return eolInfos, nil
+}
+
+func validateEOLStatus(rdsInfo RDSInfo, eolInfos []EOLInfo) (string, error) {
+	for _, eolInfo := range eolInfos {
+		if eolInfo.Engine == rdsInfo.Engine {
+			fmt.Printf("match engine %v\n", eolInfo.Engine)
+
+			result, err := compareEngineVersion(rdsInfo, eolInfo)
+			if err != nil {
+				return "", fmt.Errorf("failed to compare Engine Version:: %w", err)
+			}
+
+			if result {
+				fmt.Printf("match engine version %v\n", rdsInfo.EngineVersion)
+			}
+		}
+	}
+
+	return "hoge", nil
+}
+
+func compareEngineVersion(rdsInfo RDSInfo, eolInfo EOLInfo) (bool, error) {
+	engineVersion, err := version.NewVersion(rdsInfo.EngineVersion)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return false, nil
+	}
+
+	eolEngineVersion, err := version.NewVersion(eolInfo.EOLEngineVersion)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return false, nil
+	}
+
+	return engineVersion.LessThan(eolEngineVersion), nil
 }
