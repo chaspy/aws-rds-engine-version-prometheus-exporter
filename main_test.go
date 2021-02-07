@@ -13,6 +13,8 @@ type testdata struct {
 }
 
 func TestValidateEOLDate(t *testing.T) {
+	t.Parallel()
+
 	var layout = "2006-01-02"
 	nowForTest := "2021-01-01"
 	now, err := time.Parse(layout, nowForTest)
@@ -31,7 +33,9 @@ func TestValidateEOLDate(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := validateEOLDate(tt.validDate, tt.now)
 			if err != nil {
 				t.Fatalf("failed to calid EOL date: %#v", err)
