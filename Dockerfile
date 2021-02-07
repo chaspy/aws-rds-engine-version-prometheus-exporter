@@ -22,4 +22,6 @@ RUN adduser -D -S -H exporter
 
 USER exporter
 
+COPY eolinfo.csv /app/eolinfo.csv
+
 ENTRYPOINT ["/app/aws-rds-engine-version-prometheus-exporter"]
