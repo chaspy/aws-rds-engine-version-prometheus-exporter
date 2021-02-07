@@ -244,12 +244,13 @@ func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupported
 			if err != nil {
 				return "", fmt.Errorf("failed to compare Engine Version: %w", err)
 			}
-
 			if result {
 				eolStatus, err = validateEOLDate(minimumSupportedInfo.ValidDate, now)
 				if err != nil {
 					return "", fmt.Errorf("failed to validate EOL Date: %w", err)
 				}
+			} else {
+				eolStatus = "ok"
 			}
 		}
 	}
