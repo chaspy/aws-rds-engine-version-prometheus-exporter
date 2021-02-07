@@ -235,22 +235,54 @@ func readEOLInfoCSV() ([]MinimumSupportedInfo, error) {
 }
 
 func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupportedInfo) (string, error) {
+	var eolStatus string
+
 	for _, minimumSupportedInfo := range minimumSupportedInfos {
 		if minimumSupportedInfo.Engine == rdsInfo.Engine {
 			fmt.Printf("match engine %v\n", minimumSupportedInfo.Engine)
 
 			result, err := compareEngineVersion(rdsInfo, minimumSupportedInfo)
 			if err != nil {
-				return "", fmt.Errorf("failed to compare Engine Version:: %w", err)
+				return "", fmt.Errorf("failed to compare Engine Version: %w", err)
 			}
 
 			if result {
 				fmt.Printf("match engine version %v\n", rdsInfo.EngineVersion)
+
+				eolStatus, err = validateEOLDate(minimumSupportedInfo.ValidDate)
+				if err != nil {
+					return "", fmt.Errorf("failed to validate EOL Date: %w", err)
+				}
 			}
 		}
 	}
 
-	return "hoge", nil
+	return eolStatus, nil
+}
+
+func validateEOLDate(validDate string) (string, error) {
+	var layout = "2006-01-02"
+	var eolStatus string
+	const alertHours = 30 * 24   // 30 Days
+	const warningHours = 90 * 24 // 90 Days
+
+	now := time.Now()
+	dueDate, err := time.Parse(layout, validDate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse valid date: %w", err)
+	}
+
+	if now.After(dueDate) {
+		eolStatus = "expired"
+	} else if now.After(dueDate.Add(-1 * alertHours * time.Hour)) {
+		eolStatus = "alert"
+	} else if now.After(dueDate.Add(-1 * warningHours * time.Hour)) {
+		eolStatus = "warning"
+	} else {
+		eolStatus = "ok"
+	}
+
+	return eolStatus, nil
 }
 
 func compareEngineVersion(rdsInfo RDSInfo, minimumSupportedInfo MinimumSupportedInfo) (bool, error) {
