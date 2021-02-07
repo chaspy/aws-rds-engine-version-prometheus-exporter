@@ -239,7 +239,7 @@ func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupported
 	now := time.Now()
 
 	for _, minimumSupportedInfo := range minimumSupportedInfos {
-		if minimumSupportedInfo.Engine == rdsInfo.Engine {
+		if minimumSupportedInfo.Engine == rdsInfo.Engine { //nolint:nestif
 			result, err := compareEngineVersion(rdsInfo, minimumSupportedInfo)
 			if err != nil {
 				return "", fmt.Errorf("failed to compare Engine Version: %w", err)
