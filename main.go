@@ -240,16 +240,12 @@ func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupported
 
 	for _, minimumSupportedInfo := range minimumSupportedInfos {
 		if minimumSupportedInfo.Engine == rdsInfo.Engine {
-			fmt.Printf("match engine %v\n", minimumSupportedInfo.Engine)
-
 			result, err := compareEngineVersion(rdsInfo, minimumSupportedInfo)
 			if err != nil {
 				return "", fmt.Errorf("failed to compare Engine Version: %w", err)
 			}
 
 			if result {
-				fmt.Printf("match engine version %v\n", rdsInfo.EngineVersion)
-
 				eolStatus, err = validateEOLDate(minimumSupportedInfo.ValidDate, now)
 				if err != nil {
 					return "", fmt.Errorf("failed to validate EOL Date: %w", err)
