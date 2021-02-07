@@ -29,7 +29,7 @@ func TestValidateEOLDate(t *testing.T) {
 		{name: "Warning", validDate: "2021-01-30", now: now, out: "alert"},
 		{name: "Warning", validDate: "2021-01-31", now: now, out: "warning"},
 		{name: "Warning", validDate: "2021-03-31", now: now, out: "warning"},
-		{name: "Warning", validDate: "2021-04-01", now: now, out: "ok"},
+		{name: "OK", validDate: "2021-04-01", now: now, out: "ok"},
 	}
 
 	for _, tt := range tests {
