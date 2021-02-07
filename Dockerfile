@@ -22,6 +22,6 @@ RUN adduser -D -S -H exporter
 
 USER exporter
 
-COPY minimum_supported_version.csv /app/minimum_supported_version.csv
+COPY minimum_supported_version.csv /etc/minimum_supported_version.csv
 
 ENTRYPOINT ["/app/aws-rds-engine-version-prometheus-exporter"]
