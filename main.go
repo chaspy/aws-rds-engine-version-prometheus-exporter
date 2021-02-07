@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/hashicorp/go-version"
+	"github.com/jszwec/csvutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -19,6 +22,11 @@ type RDSInfo struct {
 	ClusterIdentifier string
 	Engine            string
 	EngineVersion     string
+}
+type MinimumSupportedInfo struct {
+	Engine                  string
+	MinimumSupportedVersion string
+	ValidDate               string
 }
 
 var (
@@ -29,12 +37,17 @@ var (
 		Name:      "cluster_count",
 		Help:      "Number of RDS",
 	},
-		[]string{"cluster_identifier", "engine", "engine_version"},
+		[]string{"cluster_identifier", "engine", "engine_version", "eol_status"},
 	)
 )
 
 func main() {
 	interval, err := getInterval()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	minimumSupportedInfo, err := readEOLInfoCSV()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,7 +61,7 @@ func main() {
 
 		// register metrics as background
 		for range ticker.C {
-			err := snapshot()
+			err := snapshot(minimumSupportedInfo)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -57,7 +70,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func snapshot() error {
+func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 	rdsCount.Reset()
 
 	ClusterInfos, err := getRDSClusters()
@@ -73,10 +86,16 @@ func snapshot() error {
 	RDSInfos := append(ClusterInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
+		eolStatus, err := validateEOLStatus(RDSInfo, minimumSupportedInfo)
+		if err != nil {
+			return fmt.Errorf("failed to validate EOL Status: %w", err)
+		}
+
 		labels := prometheus.Labels{
 			"cluster_identifier": RDSInfo.ClusterIdentifier,
 			"engine":             RDSInfo.Engine,
 			"engine_version":     RDSInfo.EngineVersion,
+			"eol_status":         eolStatus,
 		}
 		rdsCount.With(labels).Set(1)
 	}
@@ -198,4 +217,82 @@ func getRDSInstances() ([]RDSInfo, error) {
 	}
 
 	return RDSInfos, nil
+}
+
+func readEOLInfoCSV() ([]MinimumSupportedInfo, error) {
+	var eolInfos []MinimumSupportedInfo
+
+	csv, err := ioutil.ReadFile("minimum_supported_version.csv")
+	if err != nil {
+		return []MinimumSupportedInfo{}, fmt.Errorf("failed to read CSV file: %w", err)
+	}
+
+	if err := csvutil.Unmarshal(csv, &eolInfos); err != nil {
+		return []MinimumSupportedInfo{}, fmt.Errorf("failed to unmarshal: %w", err)
+	}
+
+	return eolInfos, nil
+}
+
+func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupportedInfo) (string, error) {
+	var eolStatus string
+	now := time.Now()
+
+	for _, minimumSupportedInfo := range minimumSupportedInfos {
+		if minimumSupportedInfo.Engine == rdsInfo.Engine { //nolint:nestif
+			result, err := compareEngineVersion(rdsInfo, minimumSupportedInfo)
+			if err != nil {
+				return "", fmt.Errorf("failed to compare Engine Version: %w", err)
+			}
+			if result {
+				eolStatus, err = validateEOLDate(minimumSupportedInfo.ValidDate, now)
+				if err != nil {
+					return "", fmt.Errorf("failed to validate EOL Date: %w", err)
+				}
+			} else {
+				eolStatus = "ok"
+			}
+		}
+	}
+
+	return eolStatus, nil
+}
+
+func validateEOLDate(validDate string, now time.Time) (string, error) {
+	var layout = "2006-01-02"
+	var eolStatus string
+	const alertHours = 30 * 24   // 30 Days
+	const warningHours = 90 * 24 // 90 Days
+
+	dueDate, err := time.Parse(layout, validDate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse valid date: %w", err)
+	}
+
+	switch {
+	case now.After(dueDate):
+		eolStatus = "expired"
+	case now.After(dueDate.Add(-1 * alertHours * time.Hour)):
+		eolStatus = "alert"
+	case now.After(dueDate.Add(-1 * warningHours * time.Hour)):
+		eolStatus = "warning"
+	default:
+		eolStatus = "ok"
+	}
+
+	return eolStatus, nil
+}
+
+func compareEngineVersion(rdsInfo RDSInfo, minimumSupportedInfo MinimumSupportedInfo) (bool, error) {
+	engineVersion, err := version.NewVersion(rdsInfo.EngineVersion)
+	if err != nil {
+		return false, fmt.Errorf("failed to declare engine version: %w", err)
+	}
+
+	minimumSupportedVersion, err := version.NewVersion(minimumSupportedInfo.MinimumSupportedVersion)
+	if err != nil {
+		return false, fmt.Errorf("failed to declare minimum supported version: %w", err)
+	}
+
+	return engineVersion.LessThan(minimumSupportedVersion), nil
 }

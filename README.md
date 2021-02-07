@@ -27,10 +27,10 @@ $ docker run chaspy/aws-rds-engine-version-prometheus-exporter:v0.1.0
 $ curl -s localhost:8080/metrics | grep aws_custom_rds_cluster_count
 # HELP aws_custom_rds_cluster_count Number of RDS
 # TYPE aws_custom_rds_cluster_count gauge
-aws_custom_rds_cluster_count{cluster_identifier="api-postgres-develop-a",engine="aurora-postgresql",engine_version="10.7"} 1
-aws_custom_rds_cluster_count{cluster_identifier="api-postgres-production-a",engine="aurora-postgresql",engine_version="10.7"} 1
-aws_custom_rds_cluster_count{cluster_identifier="video-production-a",engine="aurora-postgresql",engine_version="9.6.17"} 1
-aws_custom_rds_cluster_count{cluster_identifier="video-staging-a",engine="aurora-postgresql",engine_version="9.6.17"} 1
+aws_custom_rds_cluster_count{cluster_identifier="api-postgres-develop-a",engine="aurora-postgresql",engine_version="10.7",eol_status="ok"} 1
+aws_custom_rds_cluster_count{cluster_identifier="api-postgres-production-a",engine="aurora-postgresql",engine_version="10.7",eol_status="ok"} 1
+aws_custom_rds_cluster_count{cluster_identifier="video-production-a",engine="aurora-postgresql",engine_version="9.6.17",eol_status="ok"} 1
+aws_custom_rds_cluster_count{cluster_identifier="video-staging-a",engine="aurora-postgresql",engine_version="9.6.17",eol_status="ok"} 1
 ```
 
 ## IAM Role
