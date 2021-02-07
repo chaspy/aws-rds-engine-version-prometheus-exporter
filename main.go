@@ -268,13 +268,14 @@ func validateEOLDate(validDate string, now time.Time) (string, error) {
 		return "", fmt.Errorf("failed to parse valid date: %w", err)
 	}
 
-	if now.After(dueDate) {
+	switch {
+	case now.After(dueDate):
 		eolStatus = "expired"
-	} else if now.After(dueDate.Add(-1 * alertHours * time.Hour)) {
+	case now.After(dueDate.Add(-1 * alertHours * time.Hour)):
 		eolStatus = "alert"
-	} else if now.After(dueDate.Add(-1 * warningHours * time.Hour)) {
+	case now.After(dueDate.Add(-1 * warningHours * time.Hour)):
 		eolStatus = "warning"
-	} else {
+	default:
 		eolStatus = "ok"
 	}
 
