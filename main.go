@@ -236,6 +236,7 @@ func readEOLInfoCSV() ([]MinimumSupportedInfo, error) {
 
 func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupportedInfo) (string, error) {
 	var eolStatus string
+	now := time.Now()
 
 	for _, minimumSupportedInfo := range minimumSupportedInfos {
 		if minimumSupportedInfo.Engine == rdsInfo.Engine {
@@ -249,7 +250,7 @@ func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupported
 			if result {
 				fmt.Printf("match engine version %v\n", rdsInfo.EngineVersion)
 
-				eolStatus, err = validateEOLDate(minimumSupportedInfo.ValidDate)
+				eolStatus, err = validateEOLDate(minimumSupportedInfo.ValidDate, now)
 				if err != nil {
 					return "", fmt.Errorf("failed to validate EOL Date: %w", err)
 				}
@@ -260,13 +261,12 @@ func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupported
 	return eolStatus, nil
 }
 
-func validateEOLDate(validDate string) (string, error) {
+func validateEOLDate(validDate string, now time.Time) (string, error) {
 	var layout = "2006-01-02"
 	var eolStatus string
 	const alertHours = 30 * 24   // 30 Days
 	const warningHours = 90 * 24 // 90 Days
 
-	now := time.Now()
 	dueDate, err := time.Parse(layout, validDate)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse valid date: %w", err)
