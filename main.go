@@ -131,50 +131,59 @@ func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 	RDSInfos := append(ClusterInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
-		eolStatus, err := validateEOLStatus(RDSInfo, minimumSupportedInfo)
+		err := export(RDSInfo, minimumSupportedInfo)
 		if err != nil {
-			return fmt.Errorf("failed to validate EOL Status: %w", err)
+			return fmt.Errorf("failed to export metric: %w. skip rdsInfo %#v", err, RDSInfo)
 		}
+	}
 
-		// deprecated
-		labels := prometheus.Labels{
-			"cluster_identifier": RDSInfo.ClusterIdentifier,
-			"engine":             RDSInfo.Engine,
-			"engine_version":     RDSInfo.EngineVersion,
-			"eol_status":         eolStatus,
-		}
-		rdsCount.With(labels).Set(1)
+	return nil
+}
 
-		newLabels := prometheus.Labels{
-			"cluster_identifier": RDSInfo.ClusterIdentifier,
-			"engine":             RDSInfo.Engine,
-			"engine_version":     RDSInfo.EngineVersion,
-		}
+func export(rdsInfo RDSInfo, minimumSupportedInfo []MinimumSupportedInfo) error {
+	eolStatus, err := validateEOLStatus(rdsInfo, minimumSupportedInfo)
+	if err != nil {
+		return fmt.Errorf("failed to validate EOL Status: %w. skip rdsInfo %#v", err, rdsInfo)
+	}
 
-		switch eolStatus {
-		case "expired":
-			expiredCount.With(newLabels).Set(1)
-			alertCount.With(newLabels).Set(0)
-			warningCount.With(newLabels).Set(0)
-			okCount.With(newLabels).Set(0)
-		case "alert":
-			expiredCount.With(newLabels).Set(0)
-			alertCount.With(newLabels).Set(1)
-			warningCount.With(newLabels).Set(0)
-			okCount.With(newLabels).Set(0)
-		case "warning":
-			expiredCount.With(newLabels).Set(0)
-			alertCount.With(newLabels).Set(0)
-			warningCount.With(newLabels).Set(1)
-			okCount.With(newLabels).Set(0)
-		case "ok":
-			expiredCount.With(newLabels).Set(0)
-			alertCount.With(newLabels).Set(0)
-			warningCount.With(newLabels).Set(0)
-			okCount.With(newLabels).Set(1)
-		default:
-			log.Printf("eolStatus is not set. RDSInfo %#v skip", RDSInfo)
-		}
+	// deprecated
+	labels := prometheus.Labels{
+		"cluster_identifier": rdsInfo.ClusterIdentifier,
+		"engine":             rdsInfo.Engine,
+		"engine_version":     rdsInfo.EngineVersion,
+		"eol_status":         eolStatus,
+	}
+	rdsCount.With(labels).Set(1)
+
+	newLabels := prometheus.Labels{
+		"cluster_identifier": rdsInfo.ClusterIdentifier,
+		"engine":             rdsInfo.Engine,
+		"engine_version":     rdsInfo.EngineVersion,
+	}
+
+	switch eolStatus {
+	case "expired":
+		expiredCount.With(newLabels).Set(1)
+		alertCount.With(newLabels).Set(0)
+		warningCount.With(newLabels).Set(0)
+		okCount.With(newLabels).Set(0)
+	case "alert":
+		expiredCount.With(newLabels).Set(0)
+		alertCount.With(newLabels).Set(1)
+		warningCount.With(newLabels).Set(0)
+		okCount.With(newLabels).Set(0)
+	case "warning":
+		expiredCount.With(newLabels).Set(0)
+		alertCount.With(newLabels).Set(0)
+		warningCount.With(newLabels).Set(1)
+		okCount.With(newLabels).Set(0)
+	case "ok":
+		expiredCount.With(newLabels).Set(0)
+		alertCount.With(newLabels).Set(0)
+		warningCount.With(newLabels).Set(0)
+		okCount.With(newLabels).Set(1)
+	default:
+		log.Printf("eolStatus is not set. RDSInfo %#v skip", rdsInfo)
 	}
 
 	return nil
