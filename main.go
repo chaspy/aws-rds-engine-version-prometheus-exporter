@@ -29,8 +29,9 @@ type MinimumSupportedInfo struct {
 	ValidDate               string
 }
 
+//nolint:gochecknoglobals
 var (
-	//nolint:gochecknoglobals
+	// deprecated
 	rdsCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "aws_custom",
 		Subsystem: "rds",
@@ -38,6 +39,42 @@ var (
 		Help:      "Number of RDS",
 	},
 		[]string{"cluster_identifier", "engine", "engine_version", "eol_status"},
+	)
+
+	okCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "aws_custom",
+		Subsystem: "rds",
+		Name:      "eol_status_ok",
+		Help:      "Number of instances whose EOL status is ok",
+	},
+		[]string{"cluster_identifier", "engine", "engine_version"},
+	)
+
+	warningCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "aws_custom",
+		Subsystem: "rds",
+		Name:      "eol_status_warning",
+		Help:      "Number of instances whose EOL status is warning",
+	},
+		[]string{"cluster_identifier", "engine", "engine_version"},
+	)
+
+	alertCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "aws_custom",
+		Subsystem: "rds",
+		Name:      "eol_status_alert",
+		Help:      "Number of instances whose EOL status is alert",
+	},
+		[]string{"cluster_identifier", "engine", "engine_version"},
+	)
+
+	expiredCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "aws_custom",
+		Subsystem: "rds",
+		Name:      "eol_status_expired",
+		Help:      "Number of instances whose EOL status is expired",
+	},
+		[]string{"cluster_identifier", "engine", "engine_version"},
 	)
 )
 
@@ -53,6 +90,10 @@ func main() {
 	}
 
 	prometheus.MustRegister(rdsCount)
+	prometheus.MustRegister(expiredCount)
+	prometheus.MustRegister(alertCount)
+	prometheus.MustRegister(warningCount)
+	prometheus.MustRegister(okCount)
 
 	http.Handle("/metrics", promhttp.Handler())
 
@@ -72,6 +113,10 @@ func main() {
 
 func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 	rdsCount.Reset()
+	okCount.Reset()
+	warningCount.Reset()
+	alertCount.Reset()
+	expiredCount.Reset()
 
 	ClusterInfos, err := getRDSClusters()
 	if err != nil {
@@ -91,6 +136,7 @@ func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 			return fmt.Errorf("failed to validate EOL Status: %w", err)
 		}
 
+		// deprecated
 		labels := prometheus.Labels{
 			"cluster_identifier": RDSInfo.ClusterIdentifier,
 			"engine":             RDSInfo.Engine,
@@ -98,6 +144,37 @@ func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 			"eol_status":         eolStatus,
 		}
 		rdsCount.With(labels).Set(1)
+
+		newLabels := prometheus.Labels{
+			"cluster_identifier": RDSInfo.ClusterIdentifier,
+			"engine":             RDSInfo.Engine,
+			"engine_version":     RDSInfo.EngineVersion,
+		}
+
+		switch eolStatus {
+		case "expired":
+			expiredCount.With(newLabels).Set(1)
+			alertCount.With(newLabels).Set(0)
+			warningCount.With(newLabels).Set(0)
+			okCount.With(newLabels).Set(0)
+		case "alert":
+			expiredCount.With(newLabels).Set(0)
+			alertCount.With(newLabels).Set(1)
+			warningCount.With(newLabels).Set(0)
+			okCount.With(newLabels).Set(0)
+		case "warning":
+			expiredCount.With(newLabels).Set(0)
+			alertCount.With(newLabels).Set(0)
+			warningCount.With(newLabels).Set(1)
+			okCount.With(newLabels).Set(0)
+		case "ok":
+			expiredCount.With(newLabels).Set(0)
+			alertCount.With(newLabels).Set(0)
+			warningCount.With(newLabels).Set(0)
+			okCount.With(newLabels).Set(1)
+		default:
+			log.Printf("eolStatus is not set. RDSInfo %#v skip", RDSInfo)
+		}
 	}
 
 	return nil
