@@ -33,6 +33,14 @@ aws_custom_rds_cluster_count{cluster_identifier="video-production-a",engine="aur
 aws_custom_rds_cluster_count{cluster_identifier="video-staging-a",engine="aurora-postgresql",engine_version="9.6.17",eol_status="ok"} 1
 ```
 
+|metric|description|tags|note|
+|---------------------------------|-----------------------------------------------|--------------------------------------------------------------|----------|
+|aws_custom_rds_eol_status_ok     |Number of instances whose EOL status is ok     |"cluster_identifier", "engine", "engine_version"              |          |
+|aws_custom_rds_eol_status_alert  |Number of instances whose EOL status is alert  |"cluster_identifier", "engine", "engine_version"              |          |
+|aws_custom_rds_eol_status_warning|Number of instances whose EOL status is warning|"cluster_identifier", "engine", "engine_version"              |          |
+|aws_custom_rds_eol_status_expired|Number of instances whose EOL status is expired|"cluster_identifier", "engine", "engine_version"              |          |
+|aws_custom_rds_cluster_count     |Number of RDS                                  |"cluster_identifier", "engine", "engine_version", "eol_status"|DEPRECATED|
+
 ## IAM Role
 
 The following policy must be attached to the AWS role to be executed.
