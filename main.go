@@ -259,14 +259,6 @@ func getRDSInstances() ([]RDSInfo, error) {
 			},
 			{
 				Name:   aws.String("engine"),
-				Values: []*string{aws.String("oracle-se1")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("oracle-se")},
-			},
-			{
-				Name:   aws.String("engine"),
 				Values: []*string{aws.String("postgres")},
 			},
 			{
