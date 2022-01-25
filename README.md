@@ -62,6 +62,14 @@ The following policy must be attached to the AWS role to be executed.
 }
 ```
 
+## Environment Variable
+
+|name            |required|default|description                                       |
+|----------------|--------|-------|--------------------------------------------------|
+|ALERT_HOURS     |no      | 2160  | Time to determine "alert" status for EOL dates   |
+|WARNING_HOURS   |no      | 4320  | Time to determine "warning" status for EOL dates |
+|AWS_API_INTERVAL|no      | 300   | Interval between calls to the AWS API            |
+
 ## Datadog Autodiscovery
 
 If you use Datadog, you can use [Kubernetes Integration Autodiscovery](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes) feature.

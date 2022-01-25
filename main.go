@@ -204,6 +204,36 @@ func getInterval() (int, error) {
 	return integerGithubAPIInterval, nil
 }
 
+func getAlertHours() (int, error) {
+	const defaultAlertHours = 2160 // 90 days * 24 hour
+	alertHours := os.Getenv("ALERT_HOURS")
+	if len(alertHours) == 0 {
+		return defaultAlertHours, nil
+	}
+
+	integerAlertHours, err := strconv.Atoi(alertHours)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read Alert Hours: %w", err)
+	}
+
+	return integerAlertHours, nil
+}
+
+func getWarningHours() (int, error) {
+	const defaultWarningHours = 4320 // 180 days * 24 hour
+	warningHours := os.Getenv("WARNING_HOURS")
+	if len(warningHours) == 0 {
+		return defaultWarningHours, nil
+	}
+
+	integerWarningHours, err := strconv.Atoi(warningHours)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read Warning Hours: %w", err)
+	}
+
+	return integerWarningHours, nil
+}
+
 func getRDSClusters() ([]RDSInfo, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -339,8 +369,16 @@ func validateEOLStatus(rdsInfo RDSInfo, minimumSupportedInfos []MinimumSupported
 func validateEOLDate(validDate string, now time.Time) (string, error) {
 	var layout = "2006-01-02"
 	var eolStatus string
-	const alertHours = 30 * 24   // 30 Days
-	const warningHours = 90 * 24 // 90 Days
+
+	alertHours, err := getAlertHours()
+	if err != nil {
+		return "", fmt.Errorf("failed to get Alert Hour: %w", err)
+	}
+
+	warningHours, err := getWarningHours()
+	if err != nil {
+		return "", fmt.Errorf("failed to get Warning Hour: %w", err)
+	}
 
 	dueDate, err := time.Parse(layout, validDate)
 	if err != nil {
@@ -350,9 +388,9 @@ func validateEOLDate(validDate string, now time.Time) (string, error) {
 	switch {
 	case now.After(dueDate):
 		eolStatus = "expired"
-	case now.After(dueDate.Add(-1 * alertHours * time.Hour)):
+	case now.After(dueDate.Add(-1 * time.Duration(alertHours) * time.Hour)):
 		eolStatus = "alert"
-	case now.After(dueDate.Add(-1 * warningHours * time.Hour)):
+	case now.After(dueDate.Add(-1 * time.Duration(warningHours) * time.Hour)):
 		eolStatus = "warning"
 	default:
 		eolStatus = "ok"
