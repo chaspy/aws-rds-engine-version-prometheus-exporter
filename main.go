@@ -129,7 +129,8 @@ func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 		return fmt.Errorf("failed to read RDS Instance infos: %w", err)
 	}
 
-	RDSInfos := append(ClusterInfos, InstanceInfos...)
+	RDSInfos := ClusterInfos
+	RDSInfos = append(RDSInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
 		err := export(RDSInfo, minimumSupportedInfo)
