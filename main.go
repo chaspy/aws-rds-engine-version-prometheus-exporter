@@ -31,6 +31,7 @@ type MinimumSupportedInfo struct {
 
 //nolint:gochecknoglobals
 var (
+	//nolint:promlinter // It is deprecated
 	// deprecated
 	rdsCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "aws_custom",
@@ -128,7 +129,8 @@ func snapshot(minimumSupportedInfo []MinimumSupportedInfo) error {
 		return fmt.Errorf("failed to read RDS Instance infos: %w", err)
 	}
 
-	RDSInfos := append(ClusterInfos, InstanceInfos...)
+	RDSInfos := ClusterInfos
+	RDSInfos = append(RDSInfos, InstanceInfos...)
 
 	for _, RDSInfo := range RDSInfos {
 		err := export(RDSInfo, minimumSupportedInfo)
