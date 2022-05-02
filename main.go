@@ -31,6 +31,7 @@ type MinimumSupportedInfo struct {
 
 //nolint:gochecknoglobals
 var (
+	//nolint:promlinter // It is deprecated
 	// deprecated
 	rdsCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "aws_custom",
