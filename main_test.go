@@ -32,16 +32,17 @@ func TestValidateEOLDate(t *testing.T) {
 		{name: "OK", validDate: "2021-06-30", now: now, out: "ok"},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	//nolint:varnamelen
+	for _, testcase := range tests {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
-			result, err := validateEOLDate(tt.validDate, tt.now)
+			result, err := validateEOLDate(testcase.validDate, testcase.now)
 			if err != nil {
 				t.Fatalf("failed to calid EOL date: %#v", err)
 			}
-			if result != tt.out {
-				t.Fatalf("result wants %v but got %v when input validDate %v now %v", tt.out, result, tt.validDate, tt.now)
+			if result != testcase.out {
+				t.Fatalf("result wants %v but got %v when input validDate %v now %v", testcase.out, result, testcase.validDate, testcase.now)
 			}
 		})
 	}
