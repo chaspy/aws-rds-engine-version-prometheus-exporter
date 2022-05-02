@@ -32,6 +32,7 @@ func TestValidateEOLDate(t *testing.T) {
 		{name: "OK", validDate: "2021-06-30", now: now, out: "ok"},
 	}
 
+	//nolint:varnamelen // "tt" length is too short but no problem because we can recognize it is just testcase.
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
