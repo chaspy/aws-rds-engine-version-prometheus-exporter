@@ -399,7 +399,7 @@ func getRDSInstances() ([]RDSInfo, error) {
 func readEOLInfoCSV() ([]MinimumSupportedInfo, error) {
 	var eolInfos []MinimumSupportedInfo
 
-	csv, err := ioutil.ReadFile("minimum_supported_version.csv")
+	csv, err := ioutil.ReadFile("/etc/minimum_supported_version.csv")
 	if err != nil {
 		return []MinimumSupportedInfo{}, fmt.Errorf("failed to read CSV file: %w", err)
 	}
