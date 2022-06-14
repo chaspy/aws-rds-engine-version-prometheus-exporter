@@ -269,62 +269,129 @@ func getRDSInstances() ([]RDSInfo, error) {
 	}))
 
 	svc := rds.New(sess)
-	input := &rds.DescribeDBInstancesInput{
-		// Supported engine versions are referenced here
-		// https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-engine-versions.html#options
-		Filters: []*rds.Filter{
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("mariadb")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("mysql")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("oracle-ee")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("oracle-se2")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("postgres")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("sqlserver-ee")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("sqlserver-se")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("sqlserver-ex")},
-			},
-			{
-				Name:   aws.String("engine"),
-				Values: []*string{aws.String("sqlserver-web")},
-			},
-		},
-	}
+	var nextToken *string
+	// input := &rds.DescribeDBInstancesInput{
+	// 	// Supported engine versions are referenced here
+	// 	// https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-engine-versions.html#options
+	// 	Filters: []*rds.Filter{
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("mariadb")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("mysql")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("oracle-ee")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("oracle-se2")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("postgres")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("sqlserver-ee")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("sqlserver-se")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("sqlserver-ex")},
+	// 		},
+	// 		{
+	// 			Name:   aws.String("engine"),
+	// 			Values: []*string{aws.String("sqlserver-web")},
+	// 		},
+	// 	},
+	// 	Marker: nextToken,
+	// }
 
-	RDSInstances, err := svc.DescribeDBInstances(input)
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe DB instances: %w", err)
-	}
+	more := true
+	RDSInfos := make([]RDSInfo, 0)
+	for more == true {
+		RDSInstances, err := svc.DescribeDBInstances(&rds.DescribeDBInstancesInput{
+			// Supported engine versions are referenced here
+			// https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-engine-versions.html#options
+			Filters: []*rds.Filter{
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("mariadb")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("mysql")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("oracle-ee")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("oracle-se2")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("postgres")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("sqlserver-ee")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("sqlserver-se")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("sqlserver-ex")},
+				},
+				{
+					Name:   aws.String("engine"),
+					Values: []*string{aws.String("sqlserver-web")},
+				},
+			},
+			Marker: nextToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe DB instances: %w", err)
+		}
+		for _, RDSInstance := range RDSInstances.DBInstances {
+			RDSInfo := RDSInfo{
+				ClusterIdentifier: *RDSInstance.DBInstanceIdentifier,
+				Engine:            *RDSInstance.Engine,
+				EngineVersion:     *RDSInstance.EngineVersion,
+			}
 
-	RDSInfos := make([]RDSInfo, len(RDSInstances.DBInstances))
-	for i, RDSInstance := range RDSInstances.DBInstances {
-		RDSInfos[i] = RDSInfo{
-			ClusterIdentifier: *RDSInstance.DBInstanceIdentifier,
-			Engine:            *RDSInstance.Engine,
-			EngineVersion:     *RDSInstance.EngineVersion,
+			RDSInfos = append(RDSInfos, RDSInfo)
+			if RDSInstances.Marker == nil {
+				more = false
+			} else {
+				nextToken = RDSInstances.Marker
+			}
 		}
 	}
+
+	// RDSInstances, err := svc.DescribeDBInstances(input)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to describe DB instances: %w", err)
+	// }
+
+	// RDSInfos := make([]RDSInfo, len(RDSInstances.DBInstances))
+	// for i, RDSInstance := range RDSInstances.DBInstances {
+	// 	RDSInfos[i] = RDSInfo{
+	// 		ClusterIdentifier: *RDSInstance.DBInstanceIdentifier,
+	// 		Engine:            *RDSInstance.Engine,
+	// 		EngineVersion:     *RDSInstance.EngineVersion,
+	// 	}
+	// }
 
 	return RDSInfos, nil
 }
@@ -332,7 +399,7 @@ func getRDSInstances() ([]RDSInfo, error) {
 func readEOLInfoCSV() ([]MinimumSupportedInfo, error) {
 	var eolInfos []MinimumSupportedInfo
 
-	csv, err := ioutil.ReadFile("/etc/minimum_supported_version.csv")
+	csv, err := ioutil.ReadFile("minimum_supported_version.csv")
 	if err != nil {
 		return []MinimumSupportedInfo{}, fmt.Errorf("failed to read CSV file: %w", err)
 	}
