@@ -242,19 +242,29 @@ func getRDSClusters() ([]RDSInfo, error) {
 	}))
 
 	svc := rds.New(sess)
-	input := &rds.DescribeDBClustersInput{}
+	var nextToken *string
+	more := true
+	RDSInfos := make([]RDSInfo, 0)
 
-	RDSClusters, err := svc.DescribeDBClusters(input)
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe DB clusters: %w", err)
-	}
-
-	RDSInfos := make([]RDSInfo, len(RDSClusters.DBClusters))
-	for i, RDSCluster := range RDSClusters.DBClusters {
-		RDSInfos[i] = RDSInfo{
-			ClusterIdentifier: *RDSCluster.DBClusterIdentifier,
-			Engine:            *RDSCluster.Engine,
-			EngineVersion:     *RDSCluster.EngineVersion,
+	for more == true {
+		RDSClusters, err := svc.DescribeDBClusters(&rds.DescribeDBClustersInput{
+			Marker: nextToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe DB clusters: %w", err)
+		}
+		for _, RDSCluster := range RDSClusters.DBClusters {
+			RDSInfo := RDSInfo{
+				ClusterIdentifier: *RDSCluster.DBClusterIdentifier,
+				Engine:            *RDSCluster.Engine,
+				EngineVersion:     *RDSCluster.EngineVersion,
+			}
+			RDSInfos = append(RDSInfos, RDSInfo)
+			if RDSClusters.Marker == nil {
+				more = false
+			} else {
+				nextToken = RDSClusters.Marker
+			}
 		}
 	}
 
