@@ -270,50 +270,6 @@ func getRDSInstances() ([]RDSInfo, error) {
 
 	svc := rds.New(sess)
 	var nextToken *string
-	// input := &rds.DescribeDBInstancesInput{
-	// 	// Supported engine versions are referenced here
-	// 	// https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-engine-versions.html#options
-	// 	Filters: []*rds.Filter{
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("mariadb")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("mysql")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("oracle-ee")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("oracle-se2")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("postgres")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("sqlserver-ee")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("sqlserver-se")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("sqlserver-ex")},
-	// 		},
-	// 		{
-	// 			Name:   aws.String("engine"),
-	// 			Values: []*string{aws.String("sqlserver-web")},
-	// 		},
-	// 	},
-	// 	Marker: nextToken,
-	// }
-
 	more := true
 	RDSInfos := make([]RDSInfo, 0)
 	for more == true {
@@ -378,20 +334,6 @@ func getRDSInstances() ([]RDSInfo, error) {
 			}
 		}
 	}
-
-	// RDSInstances, err := svc.DescribeDBInstances(input)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to describe DB instances: %w", err)
-	// }
-
-	// RDSInfos := make([]RDSInfo, len(RDSInstances.DBInstances))
-	// for i, RDSInstance := range RDSInstances.DBInstances {
-	// 	RDSInfos[i] = RDSInfo{
-	// 		ClusterIdentifier: *RDSInstance.DBInstanceIdentifier,
-	// 		Engine:            *RDSInstance.Engine,
-	// 		EngineVersion:     *RDSInstance.EngineVersion,
-	// 	}
-	// }
 
 	return RDSInfos, nil
 }
