@@ -5,3 +5,4 @@ postgres,9.7.0,2022-01-18
 aurora-postgresql,10.4,2022-01-31
 aurora-postgresql,10.14,2022-03-16
 aurora-postgresql,11.9,2022-09-21
+mariadb,10.3,2023-05-25
