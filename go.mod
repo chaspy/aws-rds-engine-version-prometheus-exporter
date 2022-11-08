@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.132
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jszwec/csvutil v1.7.1
-	github.com/prometheus/client_golang v1.13.1
+	github.com/prometheus/client_golang v1.14.0
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
