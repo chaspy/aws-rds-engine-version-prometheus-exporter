@@ -14,7 +14,7 @@ RUN go build \
     -o /go/bin/aws-rds-engine-version-prometheus-exporter \
     -ldflags '-s -w'
 
-FROM alpine:3.17.1 as runner
+FROM alpine:3.17.2 as runner
 
 COPY --from=builder /go/bin/aws-rds-engine-version-prometheus-exporter /app/aws-rds-engine-version-prometheus-exporter
 
