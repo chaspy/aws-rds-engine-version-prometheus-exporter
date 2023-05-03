@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.255
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jszwec/csvutil v1.8.0
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 )
 
 require (
