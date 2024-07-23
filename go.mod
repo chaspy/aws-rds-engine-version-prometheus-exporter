@@ -3,7 +3,7 @@ module github.com/chaspy/aws-rds-engine-version-prometheus-exporter
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.55.0
+	github.com/aws/aws-sdk-go v1.55.1
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jszwec/csvutil v1.10.0
 	github.com/prometheus/client_golang v1.18.0
